@@ -186,7 +186,10 @@ code {
 .btn-warning {
   background: #f59e0b;
   border-color: #d97706;
-  color: white;
+  /* Testo scuro su arancio: contrasto 7.29:1 (WCAG AA ≥ 4.5). Il bianco su
+     #f59e0b era 2.15:1, illeggibile per le icone. Hover #d97706 ↔ #431407
+     resta 4.91:1. */
+  color: #431407;
 }
 
 .btn-warning:hover {
@@ -534,7 +537,7 @@ main#app {
   margin-bottom: 0.5rem;
 }
 .analysis-badge {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   padding: 0.1rem 0.45rem;
   border-radius: 12px;
   background: var(--panel);
@@ -1348,8 +1351,10 @@ main#app {
 .board-card-actions .btn {
   font-size: 0.72rem;
   padding: 0.25rem 0.5rem;
-  flex: 1 1 calc(50% - 0.125rem);
-  min-width: 0;
+  /* In riga orizzontale (non 2-per-riga): i bottoni restano affiancati con
+     larghezza naturale e wrappano solo se non ci stanno (feedback owner,
+     seq-542/544). flex-wrap sul contenitore resta attivo. */
+  flex: 0 1 auto;
 }
 .board-card-actions .issue-awaiting-triage {
   flex: 1 1 100%;
@@ -1391,11 +1396,13 @@ main#app {
 }
 .board-card-analysis .analysis-diagnosis,
 .board-card-analysis .analysis-rationale {
-  font-size: 0.78rem;
+  /* Allineato alla lista (0.85rem) per leggibilità (feedback owner seq-542/544):
+     solo dimensione, nessun font-weight aggiuntivo. */
+  font-size: 0.85rem;
   line-height: 1.4;
 }
 .board-card-analysis .analysis-cost-benefit {
-  font-size: 0.76rem;
+  font-size: 0.82rem;
 }
 .board-card-analysis .analysis-timestamp {
   margin-top: 0.3rem;
