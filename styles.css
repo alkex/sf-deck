@@ -1412,7 +1412,8 @@ main#app {
   }
   .board {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* 3 colonne (non 4): più aria per diagnosi e bottoni — scelta owner (seq-524). */
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: start;
   }
   .issues-list {
