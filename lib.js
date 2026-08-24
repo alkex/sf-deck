@@ -611,6 +611,17 @@ export function buildNewProjectCommand(projectName, prdFileName = "prd.md") {
   return `sf new ${shellQuote(name)} ${shellQuote(file)}`;
 }
 
+// Path di un asset read-only nel sito pubblicato. Con un nome di progetto,
+// l'asset vive in `projects/<name>/<file>` (architettura multi-progetto F11);
+// senza, vive alla radice (single-project / home). Pura: nessun fetch.
+export function buildProjectPath(projectName, file) {
+  const f = String(file || "");
+  if (!f) return "";
+  const name = projectName == null ? "" : String(projectName).trim();
+  if (!name) return f;
+  return `projects/${encodeURIComponent(name)}/${f}`;
+}
+
 // Pannello "Docs" read-only (ADR-0011 U3-coda): consuma `docs-status.json`
 // (emesso da `sf docs status`), NON ricalcola il drift — il motore è la CLI.
 // Puro: `status` (oggetto o null) → HTML. `now` iniettato per la data relativa.

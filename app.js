@@ -25,6 +25,7 @@ import {
   computeResumeLabelSwap,
   approveRejectButtonsState,
   buildNewProjectCommand,
+  buildProjectPath,
   normalizeConfig,
   renderDocsPanel,
 } from "./lib.js";
@@ -126,9 +127,7 @@ function markdownToHtml(md) {
 // F11: con un `projectName` carica `projects/<name>/config.json` (architettura A);
 // senza, il legacy `config.json` single-project (retrocompat).
 async function loadConfig(projectName) {
-  const url = projectName
-    ? `projects/${encodeURIComponent(projectName)}/config.json`
-    : "config.json";
+  const url = buildProjectPath(projectName, "config.json");
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Impossibile caricare ${url} (HTTP ${res.status})`);
@@ -1245,9 +1244,13 @@ async function fetchReadonlyFile(name) {
 async function renderManifestPlan() {
   const manifestEl = $("#manifest-content");
   const planEl = $("#plan-content");
+  // F11 architettura A: manifest.json/plan.md vivono sotto projects/<name>/
+  // per ogni progetto. Sulla home (no progetto selezionato) la sezione
+  // mostra "non disponibile" con grazia (entrambi i fetch tornano null).
+  const project = currentProjectFromHash();
   const [manifestText, planText] = await Promise.all([
-    fetchReadonlyFile("manifest.json"),
-    fetchReadonlyFile("plan.md"),
+    fetchReadonlyFile(buildProjectPath(project, "manifest.json")),
+    fetchReadonlyFile(buildProjectPath(project, "plan.md")),
   ]);
 
   if (manifestEl) {
