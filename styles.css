@@ -1396,20 +1396,6 @@ main#app {
   .issues-list {
     display: none;
   }
-  /* I bottoni d'azione della card (Triage/Approva/Riapri) devono restare
-     visibili quando la card è più alta della viewport della colonna.
-     .board-column-body ha overflow-y:auto (scroll locale per colonna), quindi
-     position:sticky bottom:0 attacca i bottoni al fondo della viewport della
-     colonna mentre l'utente scrolla il contenuto sopra. background + border-top
-     per separare visivamente i bottoni dal contenuto scrollato. */
-  .issue-actions {
-    position: sticky;
-    bottom: 0;
-    background: var(--panel);
-    border-top: 1px solid var(--border);
-    padding-top: 0.5rem;
-    z-index: 1;
-  }
 }
 
 /* === T3.7 — Manifest & Piano (sola lettura) + Nuovo progetto da PRD === */
