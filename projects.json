@@ -1,0 +1,13 @@
+{
+  "auth": {
+    "githubAppClientId": "Iv23liWXcGjsWB5sbvmd",
+    "oauthWorkerUrl": "https://formalyzer-oauth.alessio-dessi.workers.dev"
+  },
+  "projects": [
+    {
+      "name": "softwarefactory",
+      "repo": "alkex/SoftwareFactory",
+      "managed": "managed"
+    }
+  ]
+}

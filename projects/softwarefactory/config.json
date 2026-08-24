@@ -1,0 +1,65 @@
+{
+  "repo": "alkex/SoftwareFactory",
+  "managed": true,
+  "apiBase": "https://api.github.com",
+  "storageKey": "softwarefactory:pat",
+  "labels": {
+    "triage": "triage",
+    "triaged": "triaged",
+    "approved": "approved",
+    "rejected": "rejected",
+    "duplicated": "duplicated",
+    "delayed": "delayed",
+    "in_progress": "in_progress",
+    "fixed": "fixed",
+    "released": "released",
+    "regression_confirmed": "regression-confirmed",
+    "wontfix": "wontfix-needs-feedback",
+    "needs_feedback": "needs_feedback",
+    "awaiting_human_response": "awaiting_human_response",
+    "human_responded": "human_responded",
+    "no_build": "no-build",
+    "autonomous": "autonomous"
+  },
+  "priorities": [
+    "P0",
+    "P1",
+    "P2",
+    "P3"
+  ],
+  "types": [
+    "bug",
+    "richiesta",
+    "idea",
+    "audit"
+  ],
+  "typeAliases": {
+    "enhancement": "richiesta"
+  },
+  "boardTypes": [
+    "bug",
+    "idea",
+    "richiesta"
+  ],
+  "markers": {
+    "triage": "<!-- softwarefactory:triage:v1 -->",
+    "blocked": "<!-- softwarefactory:triage:blocked:v1 -->",
+    "blockedLegacy": [
+      "triage:blocked",
+      "BLOCKED_NEEDS_HUMAN",
+      "<!-- softwarefactory:blocked"
+    ]
+  },
+  "releaseNotePattern": "Risolto in v",
+  "auth": {
+    "githubAppClientId": "Iv23liWXcGjsWB5sbvmd",
+    "oauthWorkerUrl": "https://formalyzer-oauth.alessio-dessi.workers.dev"
+  },
+  "pages": {
+    "publishRepo": "alkex/sf-deck",
+    "publishBranch": "main",
+    "sourceRepo": "alkex/SoftwareFactory",
+    "sourcePath": "cockpit/config.json",
+    "sourceBranch": "main"
+  }
+}

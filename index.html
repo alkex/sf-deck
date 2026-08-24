@@ -1,1 +1,495 @@
-<!doctype html><meta charset="utf-8"><title>SF Cockpit</title><body style="font-family:sans-serif;padding:2rem"><h1>SF Cockpit</h1><p>Pubblicazione in corso — torna tra poco.</p></body>
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Triage Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext x='0' y='14' font-size='14'%3E📋%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="header-inner">
+        <h1 id="app-title">📋 Triage Dashboard</h1>
+        <div class="header-actions">
+          <a id="home-btn" class="btn btn-ghost" href="#" title="Torna alla home">🏠 Home</a>
+          <span id="user-info" class="user-info hidden">
+            <img id="user-avatar" alt="" class="avatar" />
+            <span id="user-name"></span>
+            <button id="logout-btn" class="btn btn-ghost">Esci</button>
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <main id="app">
+      <!-- Home multi-progetto (F11): elenco progetti scoperti automaticamente -->
+      <section id="home-view" class="view">
+        <div class="card home-card">
+          <div class="home-header">
+            <h2>🏠 Progetti</h2>
+            <button id="home-new-project-btn" class="btn btn-ghost">
+              ➕ Nuovo progetto da PRD
+            </button>
+          </div>
+          <div id="project-list" class="project-list"></div>
+          <div id="home-error" class="error hidden"></div>
+        </div>
+      </section>
+
+      <!-- Schermata di login Device Flow -->
+      <section id="login-view" class="view hidden">
+        <div class="card login-card">
+          <h2>🔐 Accesso con GitHub</h2>
+          <p>
+            Per accedere alla dashboard serve autenticarsi con GitHub. Il
+            sistema mostra un codice di 8 caratteri da inserire su
+            <code>github.com/login/device</code>.
+          </p>
+          <ol class="login-steps">
+            <li>Clicca <strong>Accedi con GitHub</strong> qui sotto.</li>
+            <li>
+              Copia il codice di 8 caratteri che appare (es.
+              <code>WDXB-MZ99</code>).
+            </li>
+            <li>
+              Vai su
+              <a
+                href="https://github.com/login/device"
+                target="_blank"
+                rel="noopener"
+                >github.com/login/device</a
+              >
+              e inserisci il codice.
+            </li>
+            <li>Approva + 2FA con Microsoft Authenticator.</li>
+            <li>Torna qui, sei dentro. 🎉</li>
+          </ol>
+
+          <div class="device-code-display hidden" id="device-code-display">
+            <p class="device-code-label">Il tuo codice:</p>
+            <div class="device-code" id="device-code"></div>
+            <a
+              id="device-link"
+              href="https://github.com/login/device"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-primary"
+              >Continua su GitHub ↗</a
+            >
+            <p class="device-code-hint">
+              La dashboard si aggiornerà automaticamente dopo l'approvazione.
+            </p>
+          </div>
+
+          <div class="device-loading hidden" id="device-loading">
+            <div class="spinner"></div>
+            <p>In attesa di approvazione...</p>
+          </div>
+
+          <div class="device-actions">
+            <button id="login-btn" class="btn btn-primary">
+              Accedi con GitHub
+            </button>
+            <button id="use-pat-btn" class="btn btn-ghost">
+              Oppure: incolla un PAT
+            </button>
+          </div>
+
+          <div id="login-error" class="error hidden"></div>
+        </div>
+      </section>
+
+      <!-- Form PAT (alternativa) -->
+      <section id="pat-view" class="view hidden">
+        <div class="card login-card">
+          <h2>🔑 Incolla Personal Access Token</h2>
+          <p>
+            Alternativa al Device Flow. Crea un Fine-Grained PAT su
+            <a
+              href="https://github.com/settings/tokens?type=beta"
+              target="_blank"
+              rel="noopener"
+              >github.com/settings/tokens</a
+            >
+            (Repository access: il repository del progetto configurato,
+            Permissions: <code>Issues: Read and write</code>).
+          </p>
+          <form id="pat-form" class="login-form">
+            <label for="pat-input">Personal Access Token</label>
+            <input
+              id="pat-input"
+              type="password"
+              placeholder="github_pat_..."
+              autocomplete="off"
+            />
+            <div class="pat-buttons">
+              <button type="button" id="pat-paste-btn" class="btn btn-ghost">
+                📋 Incolla dagli appunti
+              </button>
+              <button type="submit" class="btn btn-primary">Accedi</button>
+            </div>
+            <button
+              type="button"
+              id="pat-back-btn"
+              class="btn btn-ghost btn-back"
+            >
+              ← Torna al Device Flow
+            </button>
+          </form>
+          <div id="pat-error" class="error hidden"></div>
+        </div>
+      </section>
+
+      <!-- Schermata principale (mostrata dopo il login) -->
+      <section id="dashboard-view" class="view hidden">
+        <div class="toolbar">
+          <div class="filters">
+            <select id="filter-status" class="filter-select">
+              <option value="">Tutti gli stati</option>
+              <option value="open">🟢 Aperte</option>
+              <option value="in_progress">🔄 In esecuzione</option>
+              <option value="closed">⚪ Chiuse</option>
+              <option value="released">🚀 Rilasciate</option>
+            </select>
+            <select id="filter-labels" class="filter-select">
+              <option value="">Tutte le label</option>
+            </select>
+            <select id="filter-state" class="filter-select">
+              <option value="">Stato triage</option>
+              <option value="triage">🔍 Da analizzare</option>
+              <option value="analyzed">✅ Analizzate</option>
+              <option value="approved">👍 Approvate</option>
+              <option value="needs_feedback">🙋 In attesa feedback</option>
+              <option value="excluded">🚫 Escluse</option>
+              <option value="delayed">⏸ Rimandate</option>
+              <option value="fixed">🔧 Risolte</option>
+            </select>
+            <input
+              id="filter-search"
+              type="search"
+              placeholder="🔍 Cerca per titolo o numero..."
+              class="filter-search"
+            />
+          </div>
+          <button id="refresh-btn" class="btn btn-ghost" title="Ricarica">
+            ↻
+          </button>
+          <button
+            id="resume-btn"
+            class="btn btn-resume"
+            title="Riprendi issue bloccate (commento /resume)"
+          >
+            ▶️ Resume
+          </button>
+          <button
+            id="new-project-btn"
+            class="btn btn-ghost"
+            title="Genera il comando sf new da un PRD"
+          >
+            ➕ Nuovo progetto da PRD
+          </button>
+          <button
+            id="manifest-btn"
+            class="btn btn-ghost"
+            title="Mostra manifest (sf.project.json) e piano (plan.md)"
+          >
+            🗂 Manifest &amp; Piano
+          </button>
+          <button
+            id="docs-btn"
+            class="btn btn-ghost"
+            title="Mostra lo stato dei documenti (deriva RF↔ancore, conteggi issue)"
+          >
+            📄 Docs
+          </button>
+          <button
+            id="settings-btn"
+            class="btn btn-ghost"
+            title="Impostazioni pubblicazione (GitHub Pages)"
+          >
+            ⚙️ Impostazioni
+          </button>
+        </div>
+
+        <div id="loading" class="loading hidden">
+          <div class="spinner"></div>
+          <p>Caricamento issue in corso...</p>
+        </div>
+
+        <div id="analysis-hint" class="hint">
+          ℹ️ Le analisi AI sono mostrate come commenti strutturati sulle issue
+          (vedi il template di analisi nel repository del progetto). Le issue in
+          attesa di analisi sono marcate con la label di triage configurata.
+        </div>
+
+        <section id="pending-feedback" class="pending-section hidden">
+          <div class="pending-card">
+            <h2>⏸️ In attesa del tuo feedback</h2>
+            <p class="pending-help">
+              Queste issue sono bloccate in attesa di una tua decisione.
+              Rispondi al commento marcato per sbloccarle.
+            </p>
+            <div id="pending-list"></div>
+          </div>
+        </section>
+
+        <div id="board" class="board">
+          <div class="board-column" data-col="0">
+            <div class="board-column-header">
+              <h3>🔍 Triage</h3>
+              <span class="board-count"></span>
+            </div>
+            <div class="board-column-body"></div>
+          </div>
+          <div class="board-column" data-col="1">
+            <div class="board-column-header">
+              <h3>🐞 Bug</h3>
+              <span class="board-count"></span>
+            </div>
+            <div class="board-column-body"></div>
+          </div>
+          <div class="board-column" data-col="2">
+            <div class="board-column-header">
+              <h3>💡 Richieste e Idee</h3>
+              <span class="board-count"></span>
+            </div>
+            <div class="board-column-body"></div>
+          </div>
+          <div class="board-column" data-col="3">
+            <div class="board-column-header">
+              <h3>💬 Chiarimenti</h3>
+              <span class="board-count"></span>
+            </div>
+            <div class="board-column-body"></div>
+          </div>
+        </div>
+
+        <div id="issues-list" class="issues-list"></div>
+
+        <div id="empty-state" class="empty hidden">
+          <p>📭 Nessuna issue corrisponde ai filtri selezionati.</p>
+        </div>
+
+        <div class="rate-info">
+          <span id="rate-remaining"></span>
+          <span id="last-update"></span>
+        </div>
+      </section>
+
+      <!-- Vista Manifest & Piano (sola lettura, T3.7) -->
+      <section id="manifest-view" class="view hidden">
+        <div class="card">
+          <div class="manifest-header">
+            <h2>🗂 Manifest &amp; Piano</h2>
+            <button id="manifest-back-btn" class="btn btn-ghost">
+              ← Torna alla dashboard
+            </button>
+          </div>
+          <h3>Manifest (sf.project.json)</h3>
+          <pre id="manifest-content" class="readonly-block"></pre>
+          <h3>Piano (plan.md)</h3>
+          <pre id="plan-content" class="readonly-block"></pre>
+        </div>
+      </section>
+
+      <!-- Pannello Docs (ADR-0011 U3-coda, sola lettura) -->
+      <section id="docs-view" class="view hidden">
+        <div class="card">
+          <div class="manifest-header">
+            <h2>📄 Docs</h2>
+            <button id="docs-back-btn" class="btn btn-ghost">
+              ← Torna alla dashboard
+            </button>
+          </div>
+          <div id="docs-content"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="issue-card-template">
+      <article class="issue-card">
+        <header class="issue-header">
+          <span class="issue-number">#<span class="num"></span></span>
+          <h3 class="issue-title"></h3>
+          <span class="issue-state"></span>
+        </header>
+        <div class="issue-labels"></div>
+        <div class="issue-meta">
+          <span class="issue-author"></span>
+          <span class="issue-date"></span>
+        </div>
+        <div class="issue-analysis hidden">
+          <h4>🔍 Analisi AI</h4>
+          <div class="analysis-badges"></div>
+          <div class="analysis-cost-benefit"></div>
+          <div class="analysis-diagnosis"></div>
+          <div class="analysis-files"></div>
+          <div class="analysis-rationale"></div>
+          <div class="analysis-timestamp"></div>
+        </div>
+        <details class="issue-body-details">
+          <summary>Mostra descrizione</summary>
+          <div class="issue-body markdown-body"></div>
+        </details>
+        <div class="issue-releases hidden"></div>
+        <div class="issue-actions">
+          <a class="btn btn-ghost btn-open" target="_blank" rel="noopener"
+            >Apri su GitHub ↗</a
+          >
+          <button class="btn btn-success btn-approve">✓ Approva</button>
+          <button class="btn btn-danger btn-reject">✗ Rifiuta</button>
+          <button class="btn btn-ghost btn-comment">💬 Commenta</button>
+          <button class="btn btn-warning btn-reopen hidden">🔄 Riapri</button>
+        </div>
+        <div class="issue-feedback hidden"></div>
+      </article>
+    </template>
+
+    <!-- #502 — Dialog "Submit & Resume" per issue bloccate -->
+    <dialog id="resume-dialog">
+      <h2>▶️ Riprendi issue bloccate</h2>
+      <p class="resume-help">
+        Seleziona un'issue e scrivi la risposta: verrà postato un commento
+        <code>/resume</code> con la tua risposta, e le label verranno aggiornate
+        (<code>human_responded</code> aggiunta,
+        <code>awaiting_human_response</code> rimossa).
+      </p>
+      <ul id="resume-issues-list"></ul>
+      <form id="resume-form" class="resume-form">
+        <label for="resume-response">Risposta (obbligatoria)</label>
+        <textarea
+          id="resume-response"
+          rows="4"
+          placeholder="Es: Procedi con l'implementazione come descritto..."
+          required
+        ></textarea>
+        <div class="resume-actions">
+          <button type="button" id="resume-cancel-btn" class="btn btn-ghost">
+            Annulla
+          </button>
+          <button type="submit" id="resume-send-btn" class="btn btn-resume">
+            ▶️ Invia resume
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- #T3.7 — Dialog "Nuovo progetto da PRD" -->
+    <dialog id="new-project-dialog">
+      <h2>➕ Nuovo progetto da PRD</h2>
+      <p class="new-project-help">
+        Incolla o carica un PRD e indica il nome del progetto: viene generato il
+        comando <code>sf new</code> da eseguire localmente. Nessuna creazione
+        remota o lato backend.
+      </p>
+      <form id="new-project-form" class="new-project-form">
+        <label for="new-project-name">Nome progetto</label>
+        <input
+          id="new-project-name"
+          type="text"
+          placeholder="es. sample-foo"
+          autocomplete="off"
+        />
+        <label for="new-project-prd">PRD (incolla testo)</label>
+        <textarea id="new-project-prd" rows="8" placeholder="# PRD ..."></textarea>
+        <label for="new-project-file">oppure carica un file PRD</label>
+        <input
+          id="new-project-file"
+          type="file"
+          accept=".md,.txt,.markdown,text/markdown,text/plain"
+        />
+        <div id="new-project-error" class="error hidden"></div>
+        <div class="new-project-actions">
+          <button
+            type="button"
+            id="new-project-cancel-btn"
+            class="btn btn-ghost"
+          >
+            Annulla
+          </button>
+          <button type="submit" class="btn btn-primary">Genera comando</button>
+        </div>
+      </form>
+      <div id="new-project-result" class="new-project-result hidden">
+        <label>Comando (copia ed esegui localmente)</label>
+        <div class="new-project-command-row">
+          <code id="new-project-command" class="new-project-command"></code>
+          <button
+            type="button"
+            id="new-project-copy-btn"
+            class="btn btn-ghost"
+          >
+            📋 Copia
+          </button>
+        </div>
+        <button
+          type="button"
+          id="new-project-download-btn"
+          class="btn btn-success"
+        >
+          ⬇ Scarica PRD
+        </button>
+      </div>
+    </dialog>
+
+    <!-- F12-min (3a) — Dialog "Impostazioni pubblicazione" -->
+    <dialog id="settings-dialog">
+      <h2>⚙️ Impostazioni pubblicazione</h2>
+      <p class="settings-help">
+        Repository di pubblicazione del cockpit (GitHub Pages). La modifica viene
+        committata via API sul file <code id="settings-source-path"></code> nel
+        repo <code id="settings-source-repo"></code>, col PAT dell'utente loggato.
+      </p>
+      <form id="settings-form" class="settings-form">
+        <label for="settings-publish-repo">Repo di pubblicazione (owner/nome)</label>
+        <input
+          id="settings-publish-repo"
+          type="text"
+          placeholder="es. alkex/sf-deck"
+          autocomplete="off"
+        />
+        <label for="settings-publish-branch">Branch di pubblicazione</label>
+        <input
+          id="settings-publish-branch"
+          type="text"
+          placeholder="es. main"
+          autocomplete="off"
+        />
+        <div id="settings-error" class="error hidden"></div>
+        <div id="settings-readonly" class="hint hidden">
+          🔒 Il PAT non ha permessi di scrittura sul repo sorgente: i campi sono
+          in sola lettura.
+        </div>
+        <div id="settings-guide" class="settings-guide hidden">
+          <h3>🔎 Verifica pubblicazione</h3>
+          <div id="settings-guide-pages" class="settings-guide-item hidden"></div>
+          <div id="settings-guide-token" class="settings-guide-item hidden"></div>
+        </div>
+        <div class="settings-actions">
+          <button
+            type="button"
+            id="settings-cancel-btn"
+            class="btn btn-ghost"
+          >
+            Annulla
+          </button>
+          <button type="submit" id="settings-save-btn" class="btn btn-primary">
+            Salva
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
