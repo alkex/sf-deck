@@ -724,12 +724,15 @@ function renderIssues() {
         const actionsEl = node.querySelector(".issue-actions");
         if (actionsEl) {
           if (i.state === "closed") {
+            // Nota "📦 Chiusa (senza analisi)" spostata in testa (header),
+            // accanto al numero, allineata a destra (feedback owner seq-548/550).
             const note = document.createElement("span");
-            note.className = "issue-awaiting-triage";
+            note.className = "issue-closed-note";
             note.textContent = "📦 Chiusa (senza analisi)";
             note.title =
               "Issue chiusa prima dell'introduzione del triage automatico.";
-            actionsEl.appendChild(note);
+            const headerEl = node.querySelector(".issue-header");
+            if (headerEl) headerEl.appendChild(note);
           } else {
             const triageBtn = document.createElement("button");
             triageBtn.className = "btn btn-warning btn-force-triage";
@@ -922,9 +925,21 @@ function renderBoard() {
       const card = document.createElement("div");
       card.className = "board-card";
 
+      // Header della card: numero a sinistra, nota "Chiusa (senza analisi)"
+      // a destra (feedback owner seq-548/550). La nota non vive più nella
+      // riga azioni.
+      const header = document.createElement("div");
+      header.className = "board-card-header";
       const num = document.createElement("span");
       num.className = "board-card-num";
       num.textContent = "#" + i.number;
+      header.appendChild(num);
+      if (i.state === "closed" && !i.__analysis) {
+        const note = document.createElement("span");
+        note.className = "board-card-closed-note";
+        note.textContent = "📦 Chiusa (senza analisi)";
+        header.appendChild(note);
+      }
 
       const title = document.createElement("a");
       title.className = "board-card-title";
@@ -946,7 +961,7 @@ function renderBoard() {
       if (i.state === "closed") bits.push("chiusa");
       labels.textContent = bits.join(" · ");
 
-      card.appendChild(num);
+      card.appendChild(header);
       card.appendChild(title);
       card.appendChild(labels);
 
@@ -975,12 +990,7 @@ function renderBoard() {
       actions.appendChild(openLink);
 
       if (!i.__analysis) {
-        if (i.state === "closed") {
-          const note = document.createElement("span");
-          note.className = "issue-awaiting-triage";
-          note.textContent = "📦 Chiusa (senza analisi)";
-          actions.appendChild(note);
-        } else {
+        if (i.state !== "closed") {
           const triageBtn = document.createElement("button");
           triageBtn.className = "btn btn-warning btn-force-triage";
           triageBtn.textContent = "⚡ Triage ora";
@@ -989,6 +999,8 @@ function renderBoard() {
           );
           actions.appendChild(triageBtn);
         }
+        // Per issue chiuse senza analisi la nota "📦 Chiusa (senza analisi)"
+        // è già nell'header (board-card-closed-note), non qui.
       } else {
         // Parità con renderIssues: se l'issue ha già una label di decisione
         // (approved/rejected/duplicated/invalid/delayed), mostriamo il badge

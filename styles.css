@@ -184,16 +184,16 @@ code {
 }
 
 .btn-warning {
-  background: #f59e0b;
-  border-color: #d97706;
-  /* Testo scuro su arancio: contrasto 7.29:1 (WCAG AA ≥ 4.5). Il bianco su
-     #f59e0b era 2.15:1, illeggibile per le icone. Hover #d97706 ↔ #431407
-     resta 4.91:1. */
-  color: #431407;
+  /* Blu (blue-600) scelto dall'owner (seq-550): azione "attiva/informativa"
+     coerente con la palette (P3/link). Testo bianco, contrasto 5.17:1
+     (WCAG AA ≥ 4.5). */
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: white;
 }
 
 .btn-warning:hover {
-  background: #d97706;
+  background: #1d4ed8;
 }
 
 .btn-warning:disabled {
@@ -477,6 +477,14 @@ main#app {
   border-radius: 12px;
   font-weight: 600;
   letter-spacing: 0.05em;
+}
+
+/* Nota "📦 Chiusa (senza analisi)" in testa alla lista (seq-548/550):
+   bold, allineata a destra nell'header (il titolo ha flex:1, la nota segue). */
+.issue-closed-note {
+  font-size: 0.78rem;
+  font-weight: bold;
+  color: var(--muted);
 }
 
 .issue-state.open {
@@ -1347,6 +1355,8 @@ main#app {
   margin-top: 0.3rem;
   padding-top: 0.3rem;
   border-top: 1px solid var(--border);
+  /* Allineati a destra come la lista (.issue-actions ha flex-end) — seq-548. */
+  justify-content: flex-end;
 }
 .board-card-actions .btn {
   font-size: 0.72rem;
@@ -1362,10 +1372,25 @@ main#app {
   color: var(--muted);
 }
 
+/* Header della card board: numero a sinistra, nota "Chiusa" a destra. */
+.board-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
 .board-card-num {
   font-size: 0.72rem;
   color: var(--muted);
   font-family: ui-monospace, monospace;
+}
+
+/* Nota "📦 Chiusa (senza analisi)" in testa alla card board (seq-548/550). */
+.board-card-closed-note {
+  font-size: 0.72rem;
+  font-weight: bold;
+  color: var(--muted);
 }
 
 .board-card-title {
