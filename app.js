@@ -563,6 +563,12 @@ function renderPendingFeedback(issues) {
   section.classList.remove("hidden");
 }
 
+// PARITÀ FEATURE (avviso): renderIssues (lista) e renderBoard (board kanban)
+// sono DUE render path paralleli per le stesse issue. Qualsiasi azione sulle
+// card (bottoni, badge, analisi, ecc.) deve essere aggiunta in ENTRAMBE le
+// funzioni, altrimenti su desktop (>=900px) la lista è display:none e l'azione
+// sparisce. Già successo due volte (CSS clipping PR #190, bottoni PR #200):
+// verificare sempre entrambe quando si toccano le azioni sulle card.
 function renderIssues() {
   const filtered = applyFilters(state.issues);
   const list = $("#issues-list");
@@ -874,6 +880,8 @@ function buildBoardAnalysis(analysis) {
   return wrap;
 }
 
+// Vedi avviso PARITÀ FEATURE sopra renderIssues: questa funzione deve restare
+// in parità di feature con la lista per le azioni sulle card (bottoni, badge).
 function renderBoard() {
   const board = $("#board");
   if (!board) return;
@@ -948,6 +956,106 @@ function renderBoard() {
       const analysis = buildBoardAnalysis(i.__analysis);
       if (analysis) card.appendChild(analysis);
 
+      // Bottoni d'azione (parità feature con la lista, vedi renderIssues):
+      // il board deve offrire le stesse azioni della lista, altrimenti su
+      // desktop (>=900px, dove la lista è display:none) l'utente non ha modo
+      // di agire sulle issue. Riusa gli stessi handler della lista.
+      const actions = document.createElement("div");
+      actions.className = "board-card-actions";
+      const feedback = document.createElement("div");
+      feedback.className = "issue-feedback hidden";
+
+      // Link "Apri su GitHub" (sempre utile, compatto).
+      const openLink = document.createElement("a");
+      openLink.className = "btn btn-ghost btn-open";
+      openLink.href = i.html_url;
+      openLink.target = "_blank";
+      openLink.rel = "noopener";
+      openLink.textContent = "Apri";
+      actions.appendChild(openLink);
+
+      if (!i.__analysis) {
+        if (i.state === "closed") {
+          const note = document.createElement("span");
+          note.className = "issue-awaiting-triage";
+          note.textContent = "📦 Chiusa (senza analisi)";
+          actions.appendChild(note);
+        } else {
+          const triageBtn = document.createElement("button");
+          triageBtn.className = "btn btn-warning btn-force-triage";
+          triageBtn.textContent = "⚡ Triage ora";
+          triageBtn.addEventListener("click", () =>
+            handleForceTriage(i.number, feedback, triageBtn)
+          );
+          actions.appendChild(triageBtn);
+        }
+      } else {
+        // Parità con renderIssues: se l'issue ha già una label di decisione
+        // (approved/rejected/duplicated/invalid/delayed), mostriamo il badge
+        // di stato invece dei bottoni Approva/Rifiuta — evita di ri-postare
+        // /approve o /reject su una issue già decisa (non idempotente).
+        const L = state.config.labels;
+        const decidedLabels = [
+          L.approved,
+          L.rejected,
+          L.duplicated,
+          L.invalid,
+          L.delayed,
+        ];
+        const decidedLabel = names.find((l) => decidedLabels.includes(l));
+
+        if (decidedLabel) {
+          const stateLabels = {};
+          stateLabels[L.approved] = { text: "✅ Approvata", cls: "state-approved" };
+          stateLabels[L.rejected] = { text: "❌ Rifiutata", cls: "state-rejected" };
+          stateLabels[L.duplicated] = { text: "📋 Duplicata", cls: "state-rejected" };
+          stateLabels[L.invalid] = { text: "🚫 Non valida", cls: "state-rejected" };
+          stateLabels[L.delayed] = { text: "⏰ Rimandata", cls: "state-delayed" };
+          const sl = stateLabels[decidedLabel] || { text: decidedLabel, cls: "" };
+          const stateBadge = document.createElement("span");
+          stateBadge.className = "issue-state-badge " + sl.cls;
+          stateBadge.textContent = sl.text;
+          actions.appendChild(stateBadge);
+        } else {
+          const btnState = approveRejectButtonsState(i, state.config);
+          const approveBtn = document.createElement("button");
+          approveBtn.className = "btn btn-success btn-approve " + btnState.approveClass;
+          approveBtn.textContent = "✓ Approva";
+          const rejectBtn = document.createElement("button");
+          rejectBtn.className = "btn btn-danger btn-reject " + btnState.rejectClass;
+          rejectBtn.textContent = "✗ Rifiuta";
+          if (i.state === "closed") {
+            // Parità con renderIssues: issue chiusa → bottoni disabilitati
+            // (il riaprire passa solo dal bottone Riapri qui sotto).
+            approveBtn.disabled = true;
+            rejectBtn.disabled = true;
+            approveBtn.title = "Issue chiusa";
+            rejectBtn.title = "Issue chiusa";
+          }
+          approveBtn.addEventListener("click", () =>
+            handleApprove(i.number, feedback, approveBtn, rejectBtn)
+          );
+          rejectBtn.addEventListener("click", () =>
+            handleReject(i.number, feedback, approveBtn, rejectBtn)
+          );
+          actions.appendChild(approveBtn);
+          actions.appendChild(rejectBtn);
+        }
+      }
+
+      if (i.state === "closed") {
+        const reopenBtn = document.createElement("button");
+        reopenBtn.className = "btn btn-warning btn-reopen";
+        reopenBtn.textContent = "🔄 Riapri";
+        reopenBtn.addEventListener("click", () =>
+          handleReopen(i.number, feedback, reopenBtn)
+        );
+        actions.appendChild(reopenBtn);
+      }
+
+      card.appendChild(actions);
+      card.appendChild(feedback);
+
       body.appendChild(card);
     }
   }
@@ -969,7 +1077,7 @@ async function handleApprove(num, feedbackEl, approveBtn, rejectBtn) {
     // Nascondi subito i pulsanti e mostra il badge di stato
     approveBtn.style.display = "none";
     rejectBtn.style.display = "none";
-    const actionsEl = approveBtn.closest(".issue-actions");
+    const actionsEl = approveBtn.closest(".issue-actions, .board-card-actions");
     if (actionsEl && !actionsEl.querySelector(".issue-state-badge")) {
       const badge = document.createElement("span");
       badge.className = "issue-state-badge state-approved";
@@ -1001,7 +1109,7 @@ async function handleReject(num, feedbackEl, approveBtn, rejectBtn) {
     // Nascondi subito i pulsanti
     approveBtn.style.display = "none";
     rejectBtn.style.display = "none";
-    const actionsEl2 = approveBtn.closest(".issue-actions");
+    const actionsEl2 = approveBtn.closest(".issue-actions, .board-card-actions");
     if (actionsEl2 && !actionsEl2.querySelector(".issue-state-badge")) {
       const badge = document.createElement("span");
       badge.className = "issue-state-badge state-rejected";

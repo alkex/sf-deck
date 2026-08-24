@@ -1335,6 +1335,28 @@ main#app {
   gap: 0.2rem;
 }
 
+/* Bottoni d'azione del board (parità feature con la lista, vedi renderBoard):
+   compatti, 2-per-riga quando la card è stretta, separati dal contenuto. */
+.board-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--border);
+}
+.board-card-actions .btn {
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  flex: 1 1 calc(50% - 0.125rem);
+  min-width: 0;
+}
+.board-card-actions .issue-awaiting-triage {
+  flex: 1 1 100%;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
 .board-card-num {
   font-size: 0.72rem;
   color: var(--muted);
