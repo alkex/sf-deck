@@ -708,6 +708,22 @@ main#app {
   padding: 0.4rem 0.7rem;
 }
 
+/* Tablet/desktop dove la card può essere stretta (board a 4-col > 900px):
+   i bottoni principali vanno a 2-per-riga e occupano l'intera larghezza
+   della loro metà, così restano sempre visibili e cliccabili anche in
+   card da ~25% del viewport. Il testo/nota (.issue-awaiting-triage,
+   .issue-state-badge) occupa la riga intera. */
+@media (min-width: 641px) {
+  .issue-actions .btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 0;
+  }
+  .issue-actions .issue-awaiting-triage,
+  .issue-actions .issue-state-badge {
+    flex: 1 1 100%;
+  }
+}
+
 /* #525 - Stato finale dei bottoni approva/rifiuta su issue chiuse.
    Mantiene la classe base "btn" + colore (btn-success/btn-danger) ma
    cambia l'aspetto per riflettere la decisione già presa. */

@@ -622,6 +622,18 @@ export function buildProjectPath(projectName, file) {
   return `projects/${encodeURIComponent(name)}/${f}`;
 }
 
+// Messaggio user-facing per un asset read-only assente (es. `dossier/plan.md`
+// non creato, o fetch fallito). Il placeholder CSS `:empty::before` non si
+// applica perché `<pre>` non è considerato vuoto dal browser (contiene un
+// newline iniziale): serve un messaggio testuale esplicito. Pura: solo
+// formattazione della stringa.
+export function emptyAssetMessage(filename) {
+  const f = String(filename || "asset");
+  return (
+    `${f} non disponibile. Creane uno o lancia \`sf docs status\`.`
+  );
+}
+
 // Pannello "Docs" read-only (ADR-0011 U3-coda): consuma `docs-status.json`
 // (emesso da `sf docs status`), NON ricalcola il drift — il motore è la CLI.
 // Puro: `status` (oggetto o null) → HTML. `now` iniettato per la data relativa.

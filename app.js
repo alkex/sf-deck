@@ -26,6 +26,7 @@ import {
   approveRejectButtonsState,
   buildNewProjectCommand,
   buildProjectPath,
+  emptyAssetMessage,
   normalizeConfig,
   renderDocsPanel,
 } from "./lib.js";
@@ -1269,7 +1270,15 @@ async function renderManifestPlan() {
     }
   }
   if (planEl) {
-    planEl.textContent = planText == null ? "" : planText;
+    if (planText == null) {
+      // File assente (es. dossier/plan.md non creato) o fetch fallito:
+      // mostra un messaggio esplicito invece di un <pre> vuoto (il
+      // placeholder CSS `:empty::before` non si applica perché <pre> non
+      // è considerato vuoto dal browser — contiene un newline iniziale).
+      planEl.textContent = emptyAssetMessage("Piano (plan.md)");
+    } else {
+      planEl.textContent = planText;
+    }
   }
 }
 
