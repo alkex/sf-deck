@@ -9,6 +9,7 @@
   "autoMerge": false,
   "managed": true,
   "maxPerCycle": 1,
+  "maxParallelBranches": 1,
   "labels": {
     "triage": "triage",
     "triaged": "triaged",
