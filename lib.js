@@ -357,6 +357,14 @@ export function extractBlocked(comments, config) {
   };
 }
 
+// Classifica l'esito della verifica di accesso a un repo (F16 home / HOLD #214).
+// `"denied"` = 403/404, repo non realmente accessibile al token → il chiamante
+// nasconde il progetto. `"transient"` = rate limit / 5xx / errore di rete → NON
+// nascondere silenziosamente, segnalare un avviso. Pura, testabile.
+export function classifyRepoAccess(status) {
+  return status === 403 || status === 404 ? "denied" : "transient";
+}
+
 export function getTriageState(issue, config) {
   const labels = (issue.labels || []).map((l) => l.name);
   const L = config.labels;

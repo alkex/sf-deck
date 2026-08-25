@@ -15,6 +15,7 @@ import {
   extractBlocked,
   extractLightTriage,
   getTriageState,
+  classifyRepoAccess,
   typeOf,
   kanbanColumn,
   selectPendingFeedback,
@@ -153,7 +154,7 @@ async function loadProjectsIndex() {
   return res.json();
 }
 
-function renderHome(index) {
+async function renderHome(index) {
   const list = $("#project-list");
   list.innerHTML = "";
   const items = (index && index.projects) || [];
@@ -165,7 +166,32 @@ function renderHome(index) {
     list.appendChild(p);
     return;
   }
+  // [F16] se autenticati, filtra l'elenco mostrando solo i progetti il cui repo
+  // è realmente accessibile al token (nascondi 403/404). Senza token, elenco
+  // completo (nessuna regressione).
+  const accessible = new Set();
+  let accessCheckFailed = false; // errore transitorio (429/5xx/rete), non 403/404
+  if (state.token) {
+    for (const proj of items) {
+      if (!proj.repo) { accessible.add(proj.name); continue; }
+      try {
+        await gh(`/repos/${proj.repo}`);
+        accessible.add(proj.name);
+      } catch (err) {
+        if (classifyRepoAccess(err && err.status) === "denied") {
+          // 403/404 → repo non realmente accessibile al token, nascosto (voluto).
+          continue;
+        }
+        // Rate limit / 5xx / errore di rete: NON è un problema di permessi.
+        // Mostra comunque il progetto e segnala l'errore in un banner.
+        accessible.add(proj.name);
+        accessCheckFailed = true;
+      }
+    }
+  }
+  let shown = 0;
   for (const proj of items) {
+    if (state.token && proj.repo && !accessible.has(proj.name)) continue;
     const a = document.createElement("a");
     a.className = "project-row";
     a.href = `#project=${encodeURIComponent(proj.name)}`;
@@ -177,6 +203,20 @@ function renderHome(index) {
     meta.textContent = `${proj.repo || "—"} · ${managedLabel[proj.managed] || "osservato"}`;
     a.append(name, meta);
     list.appendChild(a);
+    shown++;
+  }
+  if (accessCheckFailed) {
+    const warn = document.createElement("p");
+    warn.className = "empty";
+    warn.textContent =
+      "⚠ Impossibile verificare l'accesso ad alcuni progetti (rate limit o errore di rete) — riprova.";
+    list.appendChild(warn);
+  }
+  if (shown === 0) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = "🔒 Nessun progetto accessibile con il token corrente.";
+    list.appendChild(p);
   }
 }
 
@@ -225,7 +265,9 @@ async function gh(path, options = {}) {
     } catch {
       // ignore
     }
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status; // HTTP status esposto al chiamante (F16/HOLD #214)
+    throw err;
   }
   return res.json();
 }
@@ -1744,6 +1786,15 @@ async function loginWithToken(token) {
   try {
     state.user = await fetchUser();
     renderUserInfo();
+    // [F16] login dalla home (nessun progetto selezionato): torna alla home e
+    // ri-renderizza l'elenco filtrato per accesso, senza entrare in dashboard.
+    if (!currentProjectFromHash()) {
+      showView("home");
+      const index = await loadProjectsIndex();
+      await renderHome(index);
+      showToast("Connesso come @" + state.user.login, "success");
+      return;
+    }
     showView("dashboard");
     showToast("Connesso come @" + state.user.login, "success");
     await loadIssues();
@@ -1885,9 +1936,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Nessun `#project=<name>` → home con l'elenco dei progetti scoperti.
     try {
       const index = await loadProjectsIndex();
-      renderHome(index);
+      await renderHome(index);
       showView("home");
       $("#home-new-project-btn").addEventListener("click", openNewProjectDialog);
+      $("#home-login-btn").addEventListener("click", () => showView("login"));
     } catch (err) {
       showError($("#home-error"), "Errore caricamento indice progetti: " + err.message);
     }
