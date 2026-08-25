@@ -307,6 +307,38 @@ export function extractAnalysis(comments, config) {
   };
 }
 
+// Estrae l'esito del triage LEGGERO — il commento consultivo "Auto-triage
+// (ADR-0008)" che `triageApply` posta PRIMA dell'approvazione owner (verdetto +
+// priorità), distinto dall'analisi RICCA col marker `<!-- X:triage:v1 -->`.
+// Il cockpit lo usa per il terzo stato "triagiata, in attesa di approvazione"
+// quando il marker ricco è ancora assente (Opzione A, seq-564).
+export function extractLightTriage(comments) {
+  if (!Array.isArray(comments)) return null;
+  const comment = comments.find((c) =>
+    (c.body || "").trim().startsWith("Auto-triage")
+  );
+  if (!comment) return null;
+
+  const body = comment.body || "";
+  function getField(name) {
+    const re = new RegExp(`-\\s*${escapeRegExp(name)}\\s*:\\s*(.+)`, "i");
+    const m = body.match(re);
+    return m ? m[1].trim() : null;
+  }
+
+  const verdict = getField("Verdetto");
+  const priority = getField("Priorità");
+  const note = getField("Nota");
+  if (!verdict && !priority && !note) return null;
+
+  return {
+    verdict: verdict || null,
+    priority: priority || null,
+    note: note || null,
+    generatedAt: comment.created_at || null,
+  };
+}
+
 export function extractBlocked(comments, config) {
   if (!Array.isArray(comments)) return null;
   const marker = (config.markers || {}).blocked;

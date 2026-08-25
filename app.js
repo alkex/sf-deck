@@ -13,6 +13,7 @@
 import {
   extractAnalysis,
   extractBlocked,
+  extractLightTriage,
   getTriageState,
   typeOf,
   kanbanColumn,
@@ -714,42 +715,76 @@ function renderIssues() {
         handleReopen(i.number, feedback, reopenBtn)
       );
 
-      // If the issue has NOT been analysed yet (no triage:v1 comment),
-      // hide the Approve/Reject buttons.
-      // - Open issues: offer "Force triage" button + "In attesa di analisi"
-      // - Closed issues: just show "Chiusa (senza analisi)" — sono pre-triage
-      if (!i.__analysis) {
-        approveBtn.style.display = "none";
-        rejectBtn.style.display = "none";
-        const actionsEl = node.querySelector(".issue-actions");
-        if (actionsEl) {
-          if (i.state === "closed") {
-            // Nota "📦 Chiusa (senza analisi)" spostata in testa (header),
-            // accanto al numero, allineata a destra (feedback owner seq-548/550).
-            const note = document.createElement("span");
-            note.className = "issue-closed-note";
-            note.textContent = "📦 Chiusa (senza analisi)";
-            note.title =
-              "Issue chiusa prima dell'introduzione del triage automatico.";
-            const headerEl = node.querySelector(".issue-header");
-            if (headerEl) headerEl.appendChild(note);
-          } else {
-            const triageBtn = document.createElement("button");
-            triageBtn.className = "btn btn-warning btn-force-triage";
-            triageBtn.textContent = "⚡ Triage ora";
-            triageBtn.title =
-              "Forza l'analisi AI di questa issue. Verrà marcata con 'triage' e processata al prossimo run.";
-            triageBtn.addEventListener("click", () =>
-              handleForceTriage(i.number, feedback, triageBtn)
-            );
-            actionsEl.appendChild(triageBtn);
+      // Stato di decisione già presente (approved/rejected/…) — calcolato prima
+      // del blocco "non analizzata" per non mostrare il terzo stato "in attesa
+      // di approvazione" su una issue già decisa (riusato anche sotto).
+      const labels = (i.labels || []).map((l) => l.name);
+      const L = state.config.labels;
+      const decidedLabels = [
+        L.approved,
+        L.rejected,
+        L.duplicated,
+        L.invalid,
+        L.delayed,
+      ];
+      const decidedLabel = labels.find((l) => decidedLabels.includes(l));
 
-            const note = document.createElement("span");
-            note.className = "issue-awaiting-triage";
-            note.textContent = "⏳ In attesa di analisi AI";
-            note.title =
-              "Issue non ancora analizzata dal triage. Clicca 'Triage ora' per forzare l'analisi al prossimo run.";
-            actionsEl.appendChild(note);
+      // Se la issue NON ha ancora l'analisi ricca (marker `<!-- X:triage:v1 -->`)
+      // E non è già decisa (la guardia `!decidedLabel` è mutuamente esclusiva col
+      // blocco `if (decidedLabel)` sotto, stesso principio del board):
+      // - triage leggero presente (commento "Auto-triage") e aperta →
+      //   terzo stato "Verdetto · Priorità — in attesa di approvazione" (Approva/
+      //   Rifiuta restano visibili);
+      // - altrimenti → nascondi Approva/Rifiuta: "⚡ Triage ora" (aperta) o
+      //   "📦 Chiusa (senza analisi)" (chiusa, pre-triage).
+      if (!i.__analysis && !decidedLabel) {
+        const lightTriage = i.__lightTriage;
+        if (lightTriage && i.state === "open") {
+          const actionsEl = node.querySelector(".issue-actions");
+          if (actionsEl) {
+            const badge = document.createElement("span");
+            badge.className = "issue-light-triage";
+            badge.textContent =
+              `🔍 Verdetto: ${lightTriage.verdict || "—"} · ` +
+              `Priorità: ${lightTriage.priority || "—"} — in attesa di approvazione`;
+            badge.title = lightTriage.note
+              ? `Nota: ${lightTriage.note}`
+              : "Triagiata (analisi leggera), in attesa dell'approvazione dell'owner.";
+            actionsEl.appendChild(badge);
+          }
+        } else {
+          approveBtn.style.display = "none";
+          rejectBtn.style.display = "none";
+          const actionsEl = node.querySelector(".issue-actions");
+          if (actionsEl) {
+            if (i.state === "closed") {
+              // Nota "📦 Chiusa (senza analisi)" spostata in testa (header),
+              // accanto al numero, allineata a destra (feedback owner seq-548/550).
+              const note = document.createElement("span");
+              note.className = "issue-closed-note";
+              note.textContent = "📦 Chiusa (senza analisi)";
+              note.title =
+                "Issue chiusa prima dell'introduzione del triage automatico.";
+              const headerEl = node.querySelector(".issue-header");
+              if (headerEl) headerEl.appendChild(note);
+            } else {
+              const triageBtn = document.createElement("button");
+              triageBtn.className = "btn btn-warning btn-force-triage";
+              triageBtn.textContent = "⚡ Triage ora";
+              triageBtn.title =
+                "Forza l'analisi AI di questa issue. Verrà marcata con 'triage' e processata al prossimo run.";
+              triageBtn.addEventListener("click", () =>
+                handleForceTriage(i.number, feedback, triageBtn)
+              );
+              actionsEl.appendChild(triageBtn);
+
+              const note = document.createElement("span");
+              note.className = "issue-awaiting-triage";
+              note.textContent = "⏳ In attesa di analisi AI";
+              note.title =
+                "Issue non ancora analizzata dal triage. Clicca 'Triage ora' per forzare l'analisi al prossimo run.";
+              actionsEl.appendChild(note);
+            }
           }
         }
       }
@@ -761,16 +796,6 @@ function renderIssues() {
       });
       // Se la issue ha già uno stato di decisione (approved/rejected/etc.),
       // mostra lo stato invece dei pulsanti approva/rifiuta.
-      const labels = (i.labels || []).map((l) => l.name);
-      const L = state.config.labels;
-      const decidedLabels = [
-        L.approved,
-        L.rejected,
-        L.duplicated,
-        L.invalid,
-        L.delayed,
-      ];
-      const decidedLabel = labels.find((l) => decidedLabels.includes(l));
       if (decidedLabel) {
         approveBtn.style.display = "none";
         rejectBtn.style.display = "none";
@@ -989,71 +1014,81 @@ function renderBoard() {
       openLink.textContent = "Apri";
       actions.appendChild(openLink);
 
-      if (!i.__analysis) {
-        if (i.state !== "closed") {
-          const triageBtn = document.createElement("button");
-          triageBtn.className = "btn btn-warning btn-force-triage";
-          triageBtn.textContent = "⚡ Triage ora";
-          triageBtn.addEventListener("click", () =>
-            handleForceTriage(i.number, feedback, triageBtn)
-          );
-          actions.appendChild(triageBtn);
-        }
-        // Per issue chiuse senza analisi la nota "📦 Chiusa (senza analisi)"
-        // è già nell'header (board-card-closed-note), non qui.
-      } else {
-        // Parità con renderIssues: se l'issue ha già una label di decisione
-        // (approved/rejected/duplicated/invalid/delayed), mostriamo il badge
-        // di stato invece dei bottoni Approva/Rifiuta — evita di ri-postare
-        // /approve o /reject su una issue già decisa (non idempotente).
-        const L = state.config.labels;
-        const decidedLabels = [
-          L.approved,
-          L.rejected,
-          L.duplicated,
-          L.invalid,
-          L.delayed,
-        ];
-        const decidedLabel = names.find((l) => decidedLabels.includes(l));
+      // Precedenza stati azione (parità con renderIssues): decisa → analisi
+      // ricca → triage leggero (terzo stato) → non analizzata.
+      const L = state.config.labels;
+      const decidedLabels = [
+        L.approved,
+        L.rejected,
+        L.duplicated,
+        L.invalid,
+        L.delayed,
+      ];
+      const decidedLabel = names.find((l) => decidedLabels.includes(l));
 
-        if (decidedLabel) {
-          const stateLabels = {};
-          stateLabels[L.approved] = { text: "✅ Approvata", cls: "state-approved" };
-          stateLabels[L.rejected] = { text: "❌ Rifiutata", cls: "state-rejected" };
-          stateLabels[L.duplicated] = { text: "📋 Duplicata", cls: "state-rejected" };
-          stateLabels[L.invalid] = { text: "🚫 Non valida", cls: "state-rejected" };
-          stateLabels[L.delayed] = { text: "⏰ Rimandata", cls: "state-delayed" };
-          const sl = stateLabels[decidedLabel] || { text: decidedLabel, cls: "" };
-          const stateBadge = document.createElement("span");
-          stateBadge.className = "issue-state-badge " + sl.cls;
-          stateBadge.textContent = sl.text;
-          actions.appendChild(stateBadge);
-        } else {
-          const btnState = approveRejectButtonsState(i, state.config);
-          const approveBtn = document.createElement("button");
-          approveBtn.className = "btn btn-success btn-approve " + btnState.approveClass;
-          approveBtn.textContent = "✓ Approva";
-          const rejectBtn = document.createElement("button");
-          rejectBtn.className = "btn btn-danger btn-reject " + btnState.rejectClass;
-          rejectBtn.textContent = "✗ Rifiuta";
-          if (i.state === "closed") {
-            // Parità con renderIssues: issue chiusa → bottoni disabilitati
-            // (il riaprire passa solo dal bottone Riapri qui sotto).
-            approveBtn.disabled = true;
-            rejectBtn.disabled = true;
-            approveBtn.title = "Issue chiusa";
-            rejectBtn.title = "Issue chiusa";
-          }
-          approveBtn.addEventListener("click", () =>
-            handleApprove(i.number, feedback, approveBtn, rejectBtn)
-          );
-          rejectBtn.addEventListener("click", () =>
-            handleReject(i.number, feedback, approveBtn, rejectBtn)
-          );
-          actions.appendChild(approveBtn);
-          actions.appendChild(rejectBtn);
+      if (decidedLabel) {
+        // Issue già decisa → badge di stato, niente Approva/Rifiuta (evita
+        // ri-postare /approve o /reject, non idempotente).
+        const stateLabels = {};
+        stateLabels[L.approved] = { text: "✅ Approvata", cls: "state-approved" };
+        stateLabels[L.rejected] = { text: "❌ Rifiutata", cls: "state-rejected" };
+        stateLabels[L.duplicated] = { text: "📋 Duplicata", cls: "state-rejected" };
+        stateLabels[L.invalid] = { text: "🚫 Non valida", cls: "state-rejected" };
+        stateLabels[L.delayed] = { text: "⏰ Rimandata", cls: "state-delayed" };
+        const sl = stateLabels[decidedLabel] || { text: decidedLabel, cls: "" };
+        const stateBadge = document.createElement("span");
+        stateBadge.className = "issue-state-badge " + sl.cls;
+        stateBadge.textContent = sl.text;
+        actions.appendChild(stateBadge);
+      } else if (i.__analysis || (i.__lightTriage && i.state !== "closed")) {
+        // Terzo stato "triagiata, in attesa di approvazione" quando c'è il
+        // triage leggero ma non ancora l'analisi ricca (Opzione A, seq-564):
+        // badge col verdetto/priorità + Approva/Rifiuta visibili.
+        if (!i.__analysis && i.__lightTriage) {
+          const badge = document.createElement("span");
+          badge.className = "issue-light-triage";
+          badge.textContent =
+            `🔍 Verdetto: ${i.__lightTriage.verdict || "—"} · ` +
+            `Priorità: ${i.__lightTriage.priority || "—"} — in attesa di approvazione`;
+          badge.title = i.__lightTriage.note
+            ? `Nota: ${i.__lightTriage.note}`
+            : "Triagiata (analisi leggera), in attesa dell'approvazione dell'owner.";
+          actions.appendChild(badge);
         }
+        const btnState = approveRejectButtonsState(i, state.config);
+        const approveBtn = document.createElement("button");
+        approveBtn.className = "btn btn-success btn-approve " + btnState.approveClass;
+        approveBtn.textContent = "✓ Approva";
+        const rejectBtn = document.createElement("button");
+        rejectBtn.className = "btn btn-danger btn-reject " + btnState.rejectClass;
+        rejectBtn.textContent = "✗ Rifiuta";
+        if (i.state === "closed") {
+          // Parità con renderIssues: issue chiusa → bottoni disabilitati
+          // (il riaprire passa solo dal bottone Riapri qui sotto).
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+          approveBtn.title = "Issue chiusa";
+          rejectBtn.title = "Issue chiusa";
+        }
+        approveBtn.addEventListener("click", () =>
+          handleApprove(i.number, feedback, approveBtn, rejectBtn)
+        );
+        rejectBtn.addEventListener("click", () =>
+          handleReject(i.number, feedback, approveBtn, rejectBtn)
+        );
+        actions.appendChild(approveBtn);
+        actions.appendChild(rejectBtn);
+      } else if (i.state !== "closed") {
+        const triageBtn = document.createElement("button");
+        triageBtn.className = "btn btn-warning btn-force-triage";
+        triageBtn.textContent = "⚡ Triage ora";
+        triageBtn.addEventListener("click", () =>
+          handleForceTriage(i.number, feedback, triageBtn)
+        );
+        actions.appendChild(triageBtn);
       }
+      // Per issue chiuse senza analisi né decisione la nota "📦 Chiusa (senza
+      // analisi)" è già nell'header (board-card-closed-note), non qui.
 
       if (i.state === "closed") {
         const reopenBtn = document.createElement("button");
@@ -1773,6 +1808,7 @@ async function loadIssues() {
           if (controller.signal.aborted) return;
           issue.__comments = comments;
           issue.__analysis = extractAnalysis(comments, state.config);
+          issue.__lightTriage = extractLightTriage(comments);
           issue.__blocked = extractBlocked(comments, state.config);
         })
       ),
