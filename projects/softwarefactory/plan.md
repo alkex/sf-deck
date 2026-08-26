@@ -11,6 +11,38 @@
 
 ### PR mergiate (ultimi 90 giorni)
 
+- #229 — Split development in due pipeline + driver round-robin (ADR-0023) _(2026-08-26)_
+- #228 — fix(fork): test fase fork + warn su createWorktree fallito _(2026-08-25)_
+- #227 — feat(fork): nodo fork — crea worktree e popola la coda rami (ADR-0023 step 2b) _(2026-08-25)_
+- #226 — feat(branches): modello stato multi-branch — coda rami + round-robin (ADR-0023 step 2a) _(2026-08-25)_
+- #225 — feat(config): maxParallelBranches — knob del fork per-issue (ADR-0023 step 1) _(2026-08-25)_
+- #224 — docs(adr): ADR-0023 — parallelizzazione ciclo sviluppo (fork per-issue) _(2026-08-25)_
+- #223 — docs(adr): ri-land ADR-0022 + ADR-0024 (worktree) + ADR-0025 (one-node-resume) _(2026-08-25)_
+- #222 — feat(adopt): sf adopt <progetto> — onboarding di un progetto già esistente (#177) _(2026-08-25)_
+- #220 — fix(gates): formalizza contratto payload sub-agent→gate + analyze/converge dormant-by-default (#170) _(2026-08-25)_
+- #221 — feat(coder): idempotenza branch/PR (step 2) _(2026-08-25)_
+- #219 — feat(tick): modalità step — un nodo LLM per invocazione + resume (punto 2 step 1) _(2026-08-25)_
+- #218 — feat(queue): guard anti-ri-claim — salta le issue con PR aperta _(2026-08-25)_
+- #215 — docs(released): criterio per applicare la label released (issue #196) _(2026-08-25)_
+- #217 — feat(worktree): primitive worktree + override SF_PROJECT_HOME + cleanup orfani _(2026-08-25)_
+- #216 — chore: micro-fix — coder apre PR in Draft + nit commento run-triage _(2026-08-25)_
+- #214 — feat(cockpit): F16 — login in home + filtro progetti per accesso reale _(2026-08-25)_
+- #213 — feat(claim): A16 — livelli di prontezza B0-B3 + gate sul claim autonomo _(2026-08-25)_
+- #212 — feat(triage): run-triage.js — limite max-issue per esecuzione (--max / TRIAGE_MAX) _(2026-08-25)_
+- #211 — feat(cockpit): terzo stato 'triagiata, in attesa di approvazione' (Opzione A) _(2026-08-25)_
+- #210 — feat(triage): script runner-side run-triage.js + triageBatchSize 20 _(2026-08-24)_
+- #209 — fix(cockpit): round 2 estetico — blu Triage, bottoni a destra, nota Chiusa in testa (board+lista) _(2026-08-24)_
+- #208 — fix(cockpit): feedback estetico — bottoni board in riga, contrasto arancio WCAG AA, testo più leggibile _(2026-08-24)_
+- #207 — test(git-credential): spawn reale del bin per coprire il wiring entry point (bug §8) _(2026-08-24)_
+- #206 — fix(git-credential): il bin non leggeva stdin → helper sempre vuoto, push su OAuth fallback _(2026-08-24)_
+- #203 — feat(git-credential): §8 opzione B — credential-helper repo-local con PAT A12 _(2026-08-24)_
+- #202 — fix(cockpit): board 3 colonne invece di 4 su desktop (scelta owner) _(2026-08-24)_
+- #200 — fix(cockpit): bottoni d'azione nel board kanban (parità feature con la lista) _(2026-08-24)_
+- #201 — docs(scheduling): aggiorna storico LLM sottostante MiniMax → DeepSeek _(2026-08-24)_
+- #199 — revert: fix sticky-bottom su selettore morto (lista nascosta su desktop), root cause reale nel board _(2026-08-24)_
+- #198 — fix(cockpit): bottoni card sticky-bottom nel board desktop 4-col _(2026-08-24)_
+- #197 — fix(pages): scarica dossier/plan.md per progetto (cockpit-index fix mancante) _(2026-08-24)_
+- #195 — feat(plan): F17 — sf plan sync <progetto> con blocco sf:derived:done (testo narrativo) _(2026-08-24)_
 - #194 — docs(backlog): F17 — Piano per-progetto (fatto derivato + pointer backlog) _(2026-08-24)_
 - #192 — docs(scheduling): nota switch LLM MiniMax M3 (ago 2026, owner-approved) _(2026-08-24)_
 - #191 — chore(tsc): JSDoc esplicito su validateRequest (capabilities.js) — sblocca CI tsc verde _(2026-08-24)_
