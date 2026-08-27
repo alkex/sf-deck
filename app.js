@@ -43,6 +43,13 @@ let state = {
   filters: { state: "", labels: "", search: "", triageState: "" },
 };
 
+// Flag "sporco": diventa true quando un'azione (approve/reject/force-triage/
+// reopen) può aver cambiato lo stato reale di una issue su GitHub. I listener
+// dei filtri lo controllano prima di decidere se fare un loadIssues() vero
+// (refresh da GitHub) o il solo re-render locale. loadIssues() lo azzera,
+// così qualunque refresh vero (incluso il click su "Aggiorna") lo consuma.
+let issuesStale = false;
+
 // Contenuto PRD + nome file dell'ultimo comando generato (T3.7), usato dal
 // bottone "Scarica PRD". Vive fuori da `state` perché non tocca la logica issue.
 let newProjectPrd = null;
@@ -1163,6 +1170,7 @@ async function handleApprove(num, feedbackEl, approveBtn, rejectBtn) {
     // un commento /approve come audit/history.
     await addLabel(num, state.config.labels.approved);
     await postComment(num, "/approve");
+    issuesStale = true;
     // Nascondi subito i pulsanti e mostra il badge di stato
     approveBtn.style.display = "none";
     rejectBtn.style.display = "none";
@@ -1195,6 +1203,7 @@ async function handleReject(num, feedbackEl, approveBtn, rejectBtn) {
     // filtrata come "excluded" nella dashboard. Commento /reject per audit.
     await addLabel(num, state.config.labels.rejected);
     await postComment(num, "/reject");
+    issuesStale = true;
     // Nascondi subito i pulsanti
     approveBtn.style.display = "none";
     rejectBtn.style.display = "none";
@@ -1259,6 +1268,7 @@ async function handleForceTriage(num, feedbackEl, triageBtn) {
         );
       }
     }
+    issuesStale = true;
     feedbackEl.classList.add("success");
     feedbackEl.textContent =
       "✅ #" +
@@ -1290,6 +1300,7 @@ async function handleReopen(num, feedbackEl, reopenBtn) {
       method: "PATCH",
       body: JSON.stringify({ state: "open", state_reason: "reopened" }),
     });
+    issuesStale = true;
     feedbackEl.classList.add("success");
     feedbackEl.textContent =
       "✅ Issue riaperta. Torna allo stato 'Aperte' dopo il refresh.";
@@ -1830,6 +1841,13 @@ async function loadIssues() {
     state.issues = await fetchIssues({ signal: controller.signal });
     if (controller.signal.aborted) return;
 
+    // Solo un refresh davvero riuscito risincronizza lo stato locale da GitHub
+    // e consuma il flag "sporco" (approve/reject/force-triage/reopen). Se il
+    // fetch fallisce qui sotto (rete/rate-limit/timeout), il flag resta true e
+    // il prossimo cambio filtro riproverà un loadIssues() vero invece di
+    // ricadere sul re-render locale con `state.issues` stantio (#254/#256).
+    issuesStale = false;
+
     // Per ogni issue aperta, scarica i commenti per estrarre l'analisi AI.
     // Le issue chiuse raramente hanno un commento di triage recente, ma
     // per coerenza le carichiamo comunque (rate limit: 1 chiamata/issue).
@@ -2012,26 +2030,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   // mostra bug in needs_feedback, ecc.).
   $("#filter-status").addEventListener("change", (e) => {
     state.filters.state = e.target.value;
-    renderIssues();
-    renderBoard();
+    if (issuesStale) {
+      loadIssues();
+    } else {
+      renderIssues();
+      renderBoard();
+    }
   });
   $("#filter-labels").addEventListener("change", (e) => {
     state.filters.labels = e.target.value;
-    renderIssues();
-    renderBoard();
+    if (issuesStale) {
+      loadIssues();
+    } else {
+      renderIssues();
+      renderBoard();
+    }
   });
   $("#filter-state").addEventListener("change", (e) => {
     state.filters.triageState = e.target.value;
-    renderIssues();
-    renderBoard();
+    if (issuesStale) {
+      loadIssues();
+    } else {
+      renderIssues();
+      renderBoard();
+    }
   });
   let searchTimer = null;
   $("#filter-search").addEventListener("input", (e) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       state.filters.search = e.target.value;
-      renderIssues();
-      renderBoard();
+      if (issuesStale) {
+        loadIssues();
+      } else {
+        renderIssues();
+        renderBoard();
+      }
     }, 200);
   });
 
