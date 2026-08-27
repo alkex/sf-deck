@@ -36,6 +36,7 @@
     "publishBranch": "main",
     "sourceRepo": "alkex/SoftwareFactory",
     "sourcePath": "cockpit/config.json",
-    "sourceBranch": "main"
+    "sourceBranch": "main",
+    "customDomain": "sf.alkadex.org"
   }
 }
