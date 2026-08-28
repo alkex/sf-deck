@@ -1,11 +1,10 @@
 {
-  "repo": "alkex/SoftwareFactory",
-  "managed": true,
+  "repo": "alkex/formalyzer",
+  "managed": false,
   "apiBase": "https://api.github.com",
-  "storageKey": "softwarefactory:pat",
+  "storageKey": "formalyzer:pat",
   "labels": {
     "triage": "triage",
-    "triaged": "triaged",
     "approved": "approved",
     "rejected": "rejected",
     "duplicated": "duplicated",
@@ -41,17 +40,25 @@
     "richiesta"
   ],
   "markers": {
-    "triage": "<!-- softwarefactory:triage:v1 -->",
-    "blocked": "<!-- softwarefactory:triage:blocked:v1 -->",
+    "triage": "<!-- formalyzer:triage:v1 -->",
+    "blocked": "<!-- formalyzer:triage:blocked:v1 -->",
     "blockedLegacy": [
       "triage:blocked",
       "BLOCKED_NEEDS_HUMAN",
-      "<!-- softwarefactory:blocked"
+      "<!-- formalyzer:blocked"
     ]
   },
   "releaseNotePattern": "Risolto in v",
   "auth": {
     "githubAppClientId": "Iv23liWXcGjsWB5sbvmd",
     "oauthWorkerUrl": "https://formalyzer-oauth.alessio-dessi.workers.dev"
+  },
+  "pages": {
+    "publishRepo": "alkex/sf-deck",
+    "publishBranch": "main",
+    "sourceRepo": "alkex/SoftwareFactory",
+    "sourcePath": "cockpit/config.json",
+    "sourceBranch": "main",
+    "customDomain": "sf.alkadex.org"
   }
 }

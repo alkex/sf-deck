@@ -9,7 +9,6 @@
   "autoMerge": false,
   "managed": true,
   "maxPerCycle": 1,
-  "maxParallelBranches": 1,
   "labels": {
     "triage": "triage",
     "triaged": "triaged",
@@ -25,26 +24,11 @@
     "needs_feedback": "needs_feedback",
     "awaiting_human_response": "awaiting_human_response",
     "human_responded": "human_responded",
-    "no_build": "no-build",
-    "autonomous": "autonomous",
-    "readiness_b0": "B0",
-    "readiness_b1": "B1",
-    "readiness_b2": "B2",
-    "readiness_b3": "B3"
+    "no_build": "no-build"
   },
   "priorities": ["P0", "P1", "P2", "P3"],
   "defaultApprovedPriority": "P2",
   "types": ["bug", "richiesta", "idea", "audit"],
   "approvedReporters": [],
-  "versionSeed": {
-    "genesis": "9476c1b",
-    "anchors": [
-      { "commit": "8fb3356", "reason": "ADR-0009 canale: spec in-repo + hardening" },
-      { "commit": "ff660c1", "reason": "ADR-0012 validateExec: schema pipeline + fail-closed" },
-      { "commit": "4e93ab7", "reason": "ADR-0017 seq per-direzione + trasporto" },
-      { "commit": "c25c9e8", "reason": "ADR-0019 canale multi-slot" },
-      { "commit": "36f8700", "reason": "ADR-0023 fork per-issue + split pipeline" }
-    ]
-  },
   "createdAt": "2026-08-16T00:00:00.000Z"
 }

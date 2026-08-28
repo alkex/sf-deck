@@ -5,9 +5,9 @@
   },
   "projects": [
     {
-      "name": "softwarefactory",
-      "repo": "alkex/SoftwareFactory",
-      "managed": "managed"
+      "name": "formalyzer",
+      "repo": "alkex/formalyzer",
+      "managed": "shadow"
     }
   ]
 }
