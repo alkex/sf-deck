@@ -84,7 +84,7 @@ code {
 
 .header-inner h1 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   font-weight: 600;
 }
 
@@ -918,7 +918,7 @@ main#app {
     gap: 0.5rem;
   }
   .header-inner h1 {
-    font-size: 1rem;
+    font-size: 1.25rem;
   }
   main#app {
     padding: 1rem 0.75rem;

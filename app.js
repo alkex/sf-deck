@@ -1949,6 +1949,8 @@ async function startDeviceFlowLogin() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   // === F11 — routing: home multi-progetto vs progetto singolo ===
+  // Ogni cambio progetto, incluso il ritorno alla home, riparte con stato pulito.
+  window.addEventListener("hashchange", () => location.reload());
   const project = currentProjectFromHash();
   if (!project) {
     // Nessun `#project=<name>` → home con l'elenco dei progetti scoperti.
@@ -1961,9 +1963,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       showError($("#home-error"), "Errore caricamento indice progetti: " + err.message);
     }
-    // Navigazione: cliccando un progetto l'hash cambia → reload con il nuovo
-    // progetto attivo (stato pulito, nessuna sovrapposizione di listener).
-    window.addEventListener("hashchange", () => location.reload());
     return;
   }
 
