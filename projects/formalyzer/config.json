@@ -1,5 +1,6 @@
 {
   "repo": "alkex/formalyzer",
+  "title": "formalyzer Triage",
   "managed": false,
   "apiBase": "https://api.github.com",
   "storageKey": "formalyzer:pat",
